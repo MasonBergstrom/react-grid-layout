@@ -69,6 +69,7 @@ export type Props = {
   onResize: EventCallback,
   onResizeStart: EventCallback,
   onResizeStop: EventCallback,
+  onHeightChange: number => void,
   children: ReactChildrenArray<ReactElement<any>>
 };
 // End Types
@@ -175,6 +176,8 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     onResize: PropTypes.func,
     // Calls when resize is complete.
     onResizeStop: PropTypes.func,
+    // Calls when height changes.
+    onHeightChange: PropTypes.func,
 
     //
     // Other validations
@@ -223,7 +226,8 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     onDragStop: noop,
     onResizeStart: noop,
     onResize: noop,
-    onResizeStop: noop
+    onResizeStop: noop,
+    onHeightChange: noop
   };
 
   state: State = {
@@ -240,6 +244,8 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     oldLayout: null,
     oldResizeItem: null
   };
+
+  currentContainerHeight: number;
 
   constructor(props: Props, context: any): void {
     super(props, context);
@@ -260,7 +266,7 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     this.onLayoutMaybeChanged(this.state.layout, this.props.layout);
   }
 
-  componentWillReceiveProps(nextProps: Props) {
+  UNSAFE_componentWillReceiveProps(nextProps: Props) {
     let newLayoutBase;
     // Legacy support for compactType
     // Allow parent to set layout directly.
@@ -300,12 +306,17 @@ export default class ReactGridLayout extends React.Component<Props, State> {
     const containerPaddingY = this.props.containerPadding
       ? this.props.containerPadding[1]
       : this.props.margin[1];
-    return (
+    const containerHeight =
       nbRow * this.props.rowHeight +
       (nbRow - 1) * this.props.margin[1] +
-      containerPaddingY * 2 +
-      "px"
-    );
+      containerPaddingY * 2;
+
+    if (containerHeight !== this.currentContainerHeight) {
+      this.currentContainerHeight = containerHeight;
+      this.props.onHeightChange(containerHeight);
+    }
+
+    return containerHeight + "px";
   }
 
   compactType(props: ?Object): CompactType {
